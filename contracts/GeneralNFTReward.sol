@@ -6,14 +6,15 @@ import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 // gego
 import "./library/Governance.sol";
 import "./interface/IPool.sol";
-import "./interface/IPosiNFTFactory.sol";
-import "./interface/IPosiNFT.sol";
+import "./interface/ISpyNFTFactory.sol";
+import "./interface/ISpyNFT.sol";
 
 
 contract GeneralNFTReward is IPool,Governance {
@@ -21,12 +22,12 @@ contract GeneralNFTReward is IPool,Governance {
     using SafeMath for uint256;
 
     IERC20 public _rewardERC20 = IERC20(address(0x0));
-    IPosiNFTFactory public _gegoFactory = IPosiNFTFactory(address(0x0));
-    IPosiNFT public _gegoToken = IPosiNFT(address(0x0));
+    ISpyNFTFactory public _gegoFactory = ISpyNFTFactory(address(0x0));
+    ISpyNFT public _gegoToken = ISpyNFT(address(0x0));
     address public _playerBook = address(0x0);
 
-    address public _teamWallet = 0x7AB2CB9913213D249F0cFdd871aA696c9529ac6b;
-    address public _rewardPool = 0x7AB2CB9913213D249F0cFdd871aA696c9529ac6b;
+    address public _teamWallet = address(0x0);
+    address public _rewardPool = address(0x0);
 
     uint256 public constant DURATION = 7 days;
     uint256 public _startTime =  1629028800;
@@ -37,10 +38,12 @@ contract GeneralNFTReward is IPool,Governance {
     uint256 public _harvestInterval = 12 hours;
     uint256 public totalLockedUpRewards;
 
-    uint256 public _teamRewardRate = 500;
+    uint256 public _teamRewardRate = 1000;
     uint256 public _poolRewardRate = 1000;
     uint256 public _baseRate = 10000;
     uint256 public _punishTime = 3 days;
+    // The precision factor
+    uint256 public REWARDS_PRECISION_FACTOR;
 
     mapping(address => uint256) public _userRewardPerTokenPaid;
     mapping(address => uint256) public _rewards;
@@ -57,7 +60,8 @@ contract GeneralNFTReward is IPool,Governance {
 
     uint256 public _totalBalance;
     mapping(address => uint256) public _degoBalances;
-    uint256 public _maxStakedDego = 200 * 1e18;
+    // uint256 public _maxStakedDego = 200 * 1e18;
+    uint256 public _maxStakedDego = 200;
 
     mapping(address => uint256[]) public _playerGego;
     mapping(uint256 => uint256) public _gegoMapIndex;
@@ -71,10 +75,15 @@ contract GeneralNFTReward is IPool,Governance {
     event RewardLockedUp(address indexed user, uint256 reward);
     event NFTReceived(address operator, address from, uint256 tokenId, bytes data);
 
-    constructor(address posiNftToken, address gegoFactory, address rewardAddress, uint256 startTime) {
+    constructor(address spyNftToken, address gegoFactory, address rewardAddress, uint256 startTime) {
         _rewardERC20 = IERC20(rewardAddress);
-        _gegoToken = IPosiNFT(posiNftToken);
-        _gegoFactory = IPosiNFTFactory(gegoFactory);
+        _gegoToken = ISpyNFT(spyNftToken);
+        _gegoFactory = ISpyNFTFactory(gegoFactory);
+
+        uint256 decimalsRewardToken = uint256(ERC20(rewardAddress).decimals());
+        require(decimalsRewardToken < 18, "Must be inferior to 18");
+
+        REWARDS_PRECISION_FACTOR = uint256(10**(uint256(18).sub(decimalsRewardToken)));
 
         _startTime = startTime;
         _lastUpdateTime = _startTime;
@@ -127,6 +136,10 @@ contract GeneralNFTReward is IPool,Governance {
     }
 
     function earned(address account) public view returns (uint256) {
+        return earnedInternal(account).div(REWARDS_PRECISION_FACTOR);
+    }
+
+    function earnedInternal(address account) private view returns (uint256) {
         return
             balanceOf(account)
                 .mul(rewardPerToken().sub(_userRewardPerTokenPaid[account]))
@@ -310,7 +323,7 @@ contract GeneralNFTReward is IPool,Governance {
     }
 
     function harvest() public updateReward(msg.sender) checkStart {
-        uint256 reward = earned(msg.sender);
+        uint256 reward = earnedInternal(msg.sender);
         if(canHarvest(msg.sender)){
             if (reward > 0 || _rewardLockedUp[msg.sender] > 0) {
                 _rewards[msg.sender] = 0;
@@ -324,8 +337,9 @@ contract GeneralNFTReward is IPool,Governance {
 
                 // reward for team
                 uint256 teamReward = reward.mul(_teamRewardRate).div(_baseRate);
-                if(teamReward>0){
-                    _rewardERC20.safeTransfer(_teamWallet, teamReward);
+                uint256 teamRewardWithDecimal = teamReward.div(REWARDS_PRECISION_FACTOR);
+                if(teamRewardWithDecimal>0 && _teamWallet != address(0)){
+                    _rewardERC20.safeTransfer(_teamWallet, teamRewardWithDecimal);
                 }
                 uint256 leftReward = reward.sub(teamReward);
                 uint256 poolReward = 0;
@@ -336,20 +350,26 @@ contract GeneralNFTReward is IPool,Governance {
                     poolReward = leftReward.mul(_poolRewardRate).div(_baseRate);
                 }
                 if(poolReward>0){
-                    _rewardERC20.safeTransfer(_rewardPool, poolReward);
+                    uint256 poolRewardWithDecimal = poolReward.div(REWARDS_PRECISION_FACTOR);
+                    if (poolRewardWithDecimal > 0 && _rewardPool != address(0)) {
+                        _rewardERC20.safeTransfer(_rewardPool, poolReward);
+                    }
                     leftReward = leftReward.sub(poolReward);
                 }
 
-                if(leftReward>0){
-                    _rewardERC20.safeTransfer(msg.sender, leftReward);
+                uint256 leftRewardWithDecimal = leftReward.div(REWARDS_PRECISION_FACTOR);
+                if(leftRewardWithDecimal>0){
+                    _rewardERC20.safeTransfer(msg.sender, leftRewardWithDecimal);
                 }
-                emit RewardPaid(msg.sender, leftReward);
+                emit RewardPaid(msg.sender, leftRewardWithDecimal);
             }
         } else if(reward > 0){
             _rewards[msg.sender] = 0;
             _rewardLockedUp[msg.sender] = _rewardLockedUp[msg.sender].add(reward);
             totalLockedUpRewards = totalLockedUpRewards.add(reward);
-            emit RewardLockedUp(msg.sender, reward);
+
+            uint256 rewardWithDecimal = reward.div(REWARDS_PRECISION_FACTOR);
+            emit RewardLockedUp(msg.sender, rewardWithDecimal);
         }
     }
 
@@ -369,7 +389,7 @@ contract GeneralNFTReward is IPool,Governance {
         IERC20(_rewardERC20).transferFrom(msg.sender, address(this), reward);
         uint256 balanceEnd = _rewardERC20.balanceOf(address(this));
 
-        uint256 realReward = balanceEnd.sub(balanceBefore);
+        uint256 realReward = balanceEnd.sub(balanceBefore).mul(REWARDS_PRECISION_FACTOR);
 
         if (block.timestamp >= _periodFinish) {
             _rewardRate = realReward.div(DURATION);

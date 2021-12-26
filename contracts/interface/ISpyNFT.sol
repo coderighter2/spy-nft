@@ -4,7 +4,7 @@ pragma solidity >=0.6.0 <=0.8.4;
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 
 
-interface IPosiNFT is IERC721 {
+interface ISpyNFT is IERC721 {
 
     struct Gego {
         uint256 id;

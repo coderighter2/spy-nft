@@ -4,9 +4,9 @@ pragma solidity >=0.6.0 <=0.8.4;
 pragma experimental ABIEncoderV2;
 
 
-import "./IPosiNFT.sol";
+import "./ISpyNFT.sol";
 
-interface IPosiNFTFactory {
+interface ISpyNFTFactory {
 
 
     function getGego(uint256 tokenId)
@@ -29,7 +29,7 @@ interface IPosiNFTFactory {
 
     function getGegoStruct(uint256 tokenId)
         external view
-        returns (IPosiNFT.Gego memory gego);
+        returns (ISpyNFT.Gego memory gego);
 
     function burn(uint256 tokenId) external returns ( bool );
     

@@ -7,12 +7,12 @@ import "@openzeppelin/contracts/utils/Address.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "./interface/IPosiNFTFactory.sol";
+import "./interface/ISpyNFTFactory.sol";
 import "./interface/IGegoRuleProxy.sol";
 import "./library/Governance.sol";
 
 
-contract PosiNFTMintProxy is Governance, IGegoRuleProxy{
+contract SpyNFTMintProxy is Governance, IGegoRuleProxy{
     using Address for address;
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
@@ -39,7 +39,7 @@ contract PosiNFTMintProxy is Governance, IGegoRuleProxy{
     }
 
     address public _costErc20Pool = address(0x0);
-    IPosiNFTFactory public _factory = IPosiNFTFactory(address(0));
+    ISpyNFTFactory public _factory = ISpyNFTFactory(address(0));
 
     event eSetRuleData(uint256 ruleId, uint256 minMintAmount, uint256 maxMintAmount, uint256 costErc20Amount, address mintErc20, address costErc20, bool canMintMaxGrade,bool canMintMaxTLevel,uint256 minBurnTime);
 
@@ -119,16 +119,16 @@ contract PosiNFTMintProxy is Governance, IGegoRuleProxy{
         public
         onlyGovernance
      {
-        _factory = IPosiNFTFactory(factory);
+        _factory = ISpyNFTFactory(factory);
      }
 
     function cost( MintParams calldata params) external override returns (  uint256 mintAmount,address mintErc20 ){
-        require(_factory == IPosiNFTFactory(msg.sender)," invalid factory caller");
+        require(_factory == ISpyNFTFactory(msg.sender)," invalid factory caller");
        (mintAmount,mintErc20) = _cost(params);
     }
 
-    function destroy(  address owner, IPosiNFT.Gego calldata gego) external override {
-        require(_factory == IPosiNFTFactory(msg.sender)," invalid factory caller");
+    function destroy(  address owner, ISpyNFT.Gego calldata gego) external override {
+        require(_factory == ISpyNFTFactory(msg.sender)," invalid factory caller");
 
         // rule proxy ignore mint time
         if( _factory.isRulerProxyContract(owner) == false){
@@ -140,8 +140,8 @@ contract PosiNFTMintProxy is Governance, IGegoRuleProxy{
     }
 
 
-    function generate( address user , uint256 ruleId, uint256 randomNonce ) external override view returns (  IPosiNFT.Gego memory gego ){
-        require(_factory == IPosiNFTFactory(msg.sender), " invalid factory caller");
+    function generate( address user , uint256 ruleId, uint256 randomNonce ) external override view returns (  ISpyNFT.Gego memory gego ){
+        require(_factory == ISpyNFTFactory(msg.sender), " invalid factory caller");
         require(_ruleSwitch[ruleId], " rule is closed ");
 
         uint256 seed = computerSeed(user);
@@ -157,23 +157,6 @@ contract PosiNFTMintProxy is Governance, IGegoRuleProxy{
         gego.tLevel = _ruleData[ruleId].tLevel;
         randomNonce++;
     }
-
-    /*
-    // struct Cost721Asset{
-    //     uint256 costErc721Id1;
-    //     uint256 costErc721Id2;
-    //     uint256 costErc721Id3;
-
-    //     address costErc721Origin;
-    // }
-
-    // struct MintParams{
-    //     address user;
-    //     uint256 amount;
-    //     uint256 ruleId;
-    // }
-    */
-
 
     function _cost( MintParams memory params) internal returns (  uint256 mintAmount,address mintErc20 ){
         require(_ruleData[params.ruleId].mintErc20 != address(0x0), "invalid mintErc20 rule !");
@@ -229,11 +212,11 @@ contract PosiNFTMintProxy is Governance, IGegoRuleProxy{
     }
 
     function computeLockDays(address user, uint nonce) internal view returns (uint256) {
-        // random from 25 - 45 days
-        uint randomnumber = uint(keccak256(abi.encodePacked(block.timestamp, msg.sender, nonce))) % 20;
-        randomnumber = randomnumber + 25;
-        if(randomnumber < 25) randomnumber = 25;
-        if(randomnumber > 45) randomnumber = 45;
+        // random from 30 - 90 days
+        uint randomnumber = uint(keccak256(abi.encodePacked(block.timestamp, user, nonce))) % 60;
+        randomnumber = randomnumber + 30;
+        if(randomnumber < 30) randomnumber = 30;
+        if(randomnumber > 90) randomnumber = 90;
         return randomnumber;
     }
 

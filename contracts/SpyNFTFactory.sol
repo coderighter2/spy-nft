@@ -8,12 +8,12 @@ import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 
-import "./interface/IPosiNFT.sol";
-import "./interface/IPosiNFTFactory.sol";
+import "./interface/ISpyNFT.sol";
+import "./interface/ISpyNFTFactory.sol";
 import "./interface/IGegoRuleProxy.sol";
 import "./library/Governance.sol";
 
-contract PosiNFTFactory is Governance, IPosiNFTFactory {
+contract SpyNFTFactory is Governance, ISpyNFTFactory {
     using SafeERC20 for IERC20;
     using Address for address;
     using SafeMath for uint256;
@@ -60,7 +60,7 @@ contract PosiNFTFactory is Governance, IPosiNFTFactory {
     // for minters
     mapping(address => bool) public _minters;
 
-    mapping(uint256 => IPosiNFT.Gego) public _gegoes;
+    mapping(uint256 => ISpyNFT.Gego) public _gegoes;
 
     mapping(uint256 => IGegoRuleProxy) public _ruleProxys;
 
@@ -70,14 +70,14 @@ contract PosiNFTFactory is Governance, IPosiNFTFactory {
     uint256 public _gegoId = _maxGegoV1Id;
 
 
-    IPosiNFT public _posiNftToken ;
+    ISpyNFT public _spyNftToken ;
 
     bool public _isUserStart = false;
 
     uint256 private _randomNonce;
 
-    constructor(address posiNftToken) {
-        _posiNftToken = IPosiNFT(posiNftToken);
+    constructor(address spyNftToken) {
+        _spyNftToken = ISpyNFT(spyNftToken);
     }
 
     function setUserStart(bool start) public onlyGovernance {
@@ -119,7 +119,7 @@ contract PosiNFTFactory is Governance, IPosiNFTFactory {
      * @dev set gego contract address
      */
     function setGegoContract(address gego) public onlyGovernance{
-        _posiNftToken = IPosiNFT(gego);
+        _spyNftToken = ISpyNFT(gego);
     }
 
     function setCurrentGegoId(uint256 id) public onlyGovernance{
@@ -151,7 +151,7 @@ contract PosiNFTFactory is Governance, IPosiNFTFactory {
             uint256 lockedDays
         )
     {
-        IPosiNFT.Gego storage gego = _gegoes[tokenId];
+        ISpyNFT.Gego storage gego = _gegoes[tokenId];
         require(gego.id > 0, "gego not exist");
         grade = gego.grade;
         quality = gego.quality;
@@ -169,7 +169,7 @@ contract PosiNFTFactory is Governance, IPosiNFTFactory {
 
     function getGegoStruct(uint256 tokenId)
         external override view
-        returns (IPosiNFT.Gego memory gego){
+        returns (ISpyNFT.Gego memory gego){
             require(_gegoes[tokenId].id > 0, "gego  not exist");
             gego = _gegoes[tokenId];
         }
@@ -203,7 +203,7 @@ contract PosiNFTFactory is Governance, IPosiNFTFactory {
 
         (mintAmount,mintErc20) = _ruleProxys[mintData.nftType].cost(params);
         _randomNonce++;
-        IPosiNFT.Gego memory gego = _ruleProxys[mintData.nftType].generate(msg.sender, mintData.ruleId, _randomNonce);
+        ISpyNFT.Gego memory gego = _ruleProxys[mintData.nftType].generate(msg.sender, mintData.ruleId, _randomNonce);
 
         uint256 gegoId = gego.id;
         if(gegoId == 0){
@@ -226,7 +226,7 @@ contract PosiNFTFactory is Governance, IPosiNFTFactory {
 
         _gegoes[gegoId] = gego;
 
-        _posiNftToken.mint(msg.sender, gegoId);
+        _spyNftToken.mint(msg.sender, gegoId);
 
         emit GegoAdded(
             gego.id,
@@ -270,7 +270,7 @@ contract PosiNFTFactory is Governance, IPosiNFTFactory {
             }
         }
 
-        IPosiNFT.Gego memory gego;
+        ISpyNFT.Gego memory gego;
         gego.id = gegoId;
         gego.blockNum = block.number;
         gego.createdTime = block.timestamp;
@@ -287,7 +287,7 @@ contract PosiNFTFactory is Governance, IPosiNFTFactory {
 
         _gegoes[gegoId] = gego;
 
-        _posiNftToken.mint(extraData.author, gegoId);
+        _spyNftToken.mint(extraData.author, gegoId);
 
         emit GegoAdded(
             gego.id,
@@ -308,11 +308,11 @@ contract PosiNFTFactory is Governance, IPosiNFTFactory {
 
 
     function burn(uint256 tokenId) external override returns ( bool ) {
-        IPosiNFT.Gego memory gego = _gegoes[tokenId];
+        ISpyNFT.Gego memory gego = _gegoes[tokenId];
         require(gego.id > 0, "not exist");
 
-        _posiNftToken.safeTransferFrom(msg.sender, address(this), tokenId);
-        _posiNftToken.burn(tokenId);
+        _spyNftToken.safeTransferFrom(msg.sender, address(this), tokenId);
+        _spyNftToken.burn(tokenId);
 
         emit GegoBurn(gego.id, gego.amount, gego.erc20);
 

@@ -5,11 +5,11 @@ import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
 import "./library/Governance.sol";
 import "./library/DegoUtil.sol";
 
-contract PosiNFT is ERC721, ERC721URIStorage, ERC721Enumerable, Governance {
+contract SpyNFT is ERC721, ERC721URIStorage, ERC721Enumerable, Governance {
     // for minters
     mapping(address => bool) public _minters;
     
-    constructor() ERC721("POSI-NFT", "POSI-NFT") {
+    constructor() ERC721("SPY-NFT", "SPY-NFT") {
     }
 
     function _beforeTokenTransfer(address from, address to, uint256 tokenId)
@@ -42,7 +42,7 @@ contract PosiNFT is ERC721, ERC721URIStorage, ERC721Enumerable, Governance {
     }
 
     function _baseURI() internal pure override returns (string memory) {
-        return "https://position.exchange/nft/";
+        return "https://spy-token.io//nft/";
     }
 
     /**

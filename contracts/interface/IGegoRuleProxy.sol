@@ -3,7 +3,7 @@ pragma solidity >=0.6.0 <=0.8.4;
 
 pragma experimental ABIEncoderV2;
 
-import "./IPosiNFT.sol";
+import "./ISpyNFT.sol";
 
 
 interface IGegoRuleProxy  {
@@ -27,8 +27,8 @@ interface IGegoRuleProxy  {
         address mintErc20
     );
 
-    function destroy( address owner, IPosiNFT.Gego calldata gego ) external;
+    function destroy( address owner, ISpyNFT.Gego calldata gego ) external;
 
-    function generate( address user,uint256 ruleId, uint256 randomNonce ) external view returns ( IPosiNFT.Gego memory gego );
+    function generate( address user,uint256 ruleId, uint256 randomNonce ) external view returns ( ISpyNFT.Gego memory gego );
 
 }
