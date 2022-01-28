@@ -35,10 +35,13 @@ async function main() {
     let nftFactoryAddr = `${process.env.NFT_FACTORY_MAIN_NET}`;
     let mintProxyAddr = `${process.env.NFT_MINT_PROXY_MAIN_NET}`;
     let nftRewardAddr = `${process.env.NFT_REWARD_MAIN_NET}`;
+    let nftRewardAddrV2 = `${process.env.NFT_REWARD_V2_MAIN_NET}`;
     let spyAddr = `${process.env.SPY_TOKEN_BSC_MAIN_NET}`;
     let insuranceAddr = `${process.env.INSURANCE_MAIN_NET}`;
+    let insuranceAddrV2 = `${process.env.INSURANCE_V2_MAIN_NET}`;
     let costNFTWalletAddr = `${process.env.COST_NFT_WALLET_MAIN_NET}`;
-    const rewardTimestamp = 1640533586;
+    let nftMarketplaceAddr = `${process.env.NFT_MARKETPLACE_MAIN_NET}`;
+    const rewardTimestamp = 1643380144;
 
     if (hre.network.name == 'bsctest') {
         nftAddr = `${process.env.NFT_TEST_NET}`;
@@ -47,34 +50,59 @@ async function main() {
         costNFTWalletAddr = `${process.env.COST_NFT_WALLET_TEST_NET}`;
         spyAddr = `${process.env.SPY_TOKEN_BSC_TEST_NET}`;
         nftRewardAddr = `${process.env.NFT_REWARD_TEST_NET}`;
+        nftRewardAddrV2 = `${process.env.NFT_REWARD_V2_TEST_NET}`;
         insuranceAddr = `${process.env.INSURANCE_TEST_NET}`
+        insuranceAddrV2 = `${process.env.INSURANCE_V2_TEST_NET}`;
+        nftMarketplaceAddr = `${process.env.NFT_MARKETPLACE_TEST_NET}`;
     }
-    // try {
-    //     await verifyContract(nftAddr, [], "contracts/SpyNFT.sol:SpyNFT");
-    // } catch (e) {
-    //     console.log(e);
-    // }
 
-    // try {
-    //     await verifyContract(nftFactoryAddr, [nftAddr], "contracts/SpyNFTFactory.sol:SpyNFTFactory");
-    // } catch (e) {
-    //     console.log(e);
-    // }
+    /*
+    try {
+        await verifyContract(nftAddr, [], "contracts/SpyNFT.sol:SpyNFT");
+    } catch (e) {
+        console.log(e);
+    }
 
-    // try {
-    //     await verifyContract(nftRewardAddr, [nftAddr, nftFactoryAddr, spyAddr, rewardTimestamp], "contracts/GeneralNFTReward.sol:GeneralNFTReward");
-    // } catch (e) {
-    //     console.log(e);
-    // }
+    try {
+        await verifyContract(nftFactoryAddr, [nftAddr], "contracts/SpyNFTFactory.sol:SpyNFTFactory");
+    } catch (e) {
+        console.log(e);
+    }
 
-    // try {
-    //     await verifyContract(insuranceAddr, [spyAddr, nftRewardAddr], "contracts/InsuranceFundV1.sol:InsuranceFundV1");
-    // } catch (e) {
-    //     console.log(e);
-    // }
+    try {
+        await verifyContract(nftRewardAddr, [nftAddr, nftFactoryAddr, spyAddr, rewardTimestamp], "contracts/GeneralNFTReward.sol:GeneralNFTReward");
+    } catch (e) {
+        console.log(e);
+    }
+
+    try {
+        await verifyContract(insuranceAddr, [spyAddr, nftRewardAddr], "contracts/InsuranceFundV1.sol:InsuranceFundV1");
+    } catch (e) {
+        console.log(e);
+    }
 
     try {
         await verifyContract(mintProxyAddr, [costNFTWalletAddr], "contracts/SpyNFTMintProxy.sol:SpyNFTMintProxy");
+    } catch (e) {
+        console.log(e);
+    }
+    
+
+    try {
+        await verifyContract(nftMarketplaceAddr, [], "contracts/Marketplace.sol:SpyNFTMarketplace");
+    } catch (e) {
+        console.log(e);
+    }
+    */
+
+    try {
+        await verifyContract(nftRewardAddrV2, [nftAddr, nftFactoryAddr, spyAddr, rewardTimestamp], "contracts/GeneralNFTReward.sol:GeneralNFTReward");
+    } catch (e) {
+        console.log(e);
+    }
+
+    try {
+        await verifyContract(insuranceAddrV2, [spyAddr, nftRewardAddr], "contracts/InsuranceFundV1.sol:InsuranceFundV1");
     } catch (e) {
         console.log(e);
     }

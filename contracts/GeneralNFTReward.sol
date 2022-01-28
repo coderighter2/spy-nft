@@ -94,7 +94,7 @@ contract GeneralNFTReward is IPool,Governance {
         _rewardPerTokenStored = rewardPerToken();
         _lastUpdateTime = lastTimeRewardApplicable();
         if (account != address(0)) {
-            _rewards[account] = earned(account);
+            _rewards[account] = earnedInternal(account);
             _userRewardPerTokenPaid[account] = _rewardPerTokenStored;
         }
         _;
@@ -133,6 +133,10 @@ contract GeneralNFTReward is IPool,Governance {
                     .mul(1e18)
                     .div(totalSupply())
             );
+    }
+
+    function rewardLockedupForUser(address account) public view returns (uint256) {
+        return _rewardLockedUp[account].div(REWARDS_PRECISION_FACTOR);
     }
 
     function earned(address account) public view returns (uint256) {
@@ -352,7 +356,7 @@ contract GeneralNFTReward is IPool,Governance {
                 if(poolReward>0){
                     uint256 poolRewardWithDecimal = poolReward.div(REWARDS_PRECISION_FACTOR);
                     if (poolRewardWithDecimal > 0 && _rewardPool != address(0)) {
-                        _rewardERC20.safeTransfer(_rewardPool, poolReward);
+                        _rewardERC20.safeTransfer(_rewardPool, poolRewardWithDecimal);
                     }
                     leftReward = leftReward.sub(poolReward);
                 }

@@ -43,6 +43,8 @@ async function main() {
 
   const [deployer] = await ethers.getSigners();
 
+  
+/*
   // We get the contract to deploy
   const SpyNFT = await ethers.getContractFactory("SpyNFT");
   const spyNFT = await SpyNFT.deploy();
@@ -61,6 +63,33 @@ async function main() {
   console.log('NFT :' + spyNFT.address);
   console.log('NFT Factory :' + spyNFTFactory.address);
   console.log('Mint Proxy :' + spyNFTMinProxy.address);
+  console.log('GeneralNFTReward :' + generalNFTReward.address);
+  console.log('InsuranceFundV1 :' + insuranceFund.address);
+  */
+
+  await deployRewardPool();
+  const spyNFTMarketplace = await deployMarketplace();
+  console.log('NFT Marketplace:' + spyNFTMarketplace.address);
+}
+
+async function deployRewardPool() {
+  let nftAddr = `${process.env.NFT_MAIN_NET}`;
+  let nftFactoryAddr = `${process.env.NFT_FACTORY_MAIN_NET}`;
+  let mintProxyAddr = `${process.env.NFT_MINT_PROXY_MAIN_NET}`;
+  let spyAddr = `${process.env.SPY_TOKEN_BSC_MAIN_NET}`;
+  let costNFTWalletAddr = `${process.env.COST_NFT_WALLET_MAIN_NET}`;
+
+  if (hre.network.name == 'bsctest') {
+      nftAddr = `${process.env.NFT_TEST_NET}`;
+      nftFactoryAddr = `${process.env.NFT_FACTORY_TEST_NET}`;
+      mintProxyAddr = `${process.env.NFT_MINT_PROXY_TEST_NET}`;
+      costNFTWalletAddr = `${process.env.COST_NFT_WALLET_TEST_NET}`;
+      spyAddr = `${process.env.SPY_TOKEN_BSC_TEST_NET}`;
+  }
+
+  const generalNFTReward = await deployNFTReward(nftAddr, nftFactoryAddr);
+  const insuranceFund = await deployInsuranceFund(generalNFTReward);
+
   console.log('GeneralNFTReward :' + generalNFTReward.address);
   console.log('InsuranceFundV1 :' + insuranceFund.address);
 }
@@ -122,6 +151,14 @@ async function deployInsuranceFund(nftReward: GeneralNFTReward) {
   await insuranceFundV1.setMaxStakedDego(BigNumber.from(100000));
 
   return insuranceFundV1;
+}
+
+async function deployMarketplace() {
+
+  const SpyNFTMarketplace = await ethers.getContractFactory("SpyNFTMarketplace");
+  const spyNFTMarketplace = await SpyNFTMarketplace.deploy();
+
+  return spyNFTMarketplace;
 }
 
 // We recommend this pattern to be able to use async/await everywhere
