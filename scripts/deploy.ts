@@ -68,8 +68,8 @@ async function main() {
   */
 
   await deployRewardPool();
-  const spyNFTMarketplace = await deployMarketplace();
-  console.log('NFT Marketplace:' + spyNFTMarketplace.address);
+  // const spyNFTMarketplace = await deployMarketplace();
+  // console.log('NFT Marketplace:' + spyNFTMarketplace.address);
 }
 
 async function deployRewardPool() {

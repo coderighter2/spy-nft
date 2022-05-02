@@ -43,7 +43,7 @@ async function main() {
     let insuranceAddrV3 = `${process.env.INSURANCE_V3_MAIN_NET}`;
     let costNFTWalletAddr = `${process.env.COST_NFT_WALLET_MAIN_NET}`;
     let nftMarketplaceAddr = `${process.env.NFT_MARKETPLACE_MAIN_NET}`;
-    const rewardTimestamp = 1651193287;
+    const rewardTimestamp = 1651475852;
 
     if (hre.network.name == 'bsctest') {
         nftAddr = `${process.env.NFT_TEST_NET}`;
@@ -60,52 +60,15 @@ async function main() {
         nftMarketplaceAddr = `${process.env.NFT_MARKETPLACE_TEST_NET}`;
     }
 
-    /*
+
     try {
-        await verifyContract(nftAddr, [], "contracts/SpyNFT.sol:SpyNFT");
+        const implementation = await hre.upgrades.erc1967.getImplementationAddress(nftRewardAddrV3)
+        await verifyContract(implementation, [
+          
+        ], "contracts/GeneralNFTRewardUpgradeable.sol:GeneralNFTRewardUpgradeable");
     } catch (e) {
         console.log(e);
     }
-
-    try {
-        await verifyContract(nftFactoryAddr, [nftAddr], "contracts/SpyNFTFactory.sol:SpyNFTFactory");
-    } catch (e) {
-        console.log(e);
-    }
-
-    try {
-        await verifyContract(nftRewardAddr, [nftAddr, nftFactoryAddr, spyAddr, rewardTimestamp], "contracts/GeneralNFTReward.sol:GeneralNFTReward");
-    } catch (e) {
-        console.log(e);
-    }
-
-    try {
-        await verifyContract(insuranceAddr, [spyAddr, nftRewardAddr], "contracts/InsuranceFundV1.sol:InsuranceFundV1");
-    } catch (e) {
-        console.log(e);
-    }
-
-    try {
-        await verifyContract(mintProxyAddr, [costNFTWalletAddr], "contracts/SpyNFTMintProxy.sol:SpyNFTMintProxy");
-    } catch (e) {
-        console.log(e);
-    }
-    
-    */
-
-    // try {
-    //     await verifyContract(nftMarketplaceAddr, [], "contracts/Marketplace.sol:SpyNFTMarketplace");
-    // } catch (e) {
-    //     console.log(e);
-    // }
-
-    try {
-        await verifyContract(nftRewardAddrV3, [nftAddr, nftFactoryAddr, spyAddr, rewardTimestamp], "contracts/GeneralNFTReward.sol:GeneralNFTReward");
-    } catch (e) {
-        console.log(e);
-    }
-
-    
 
     try {
         await verifyContract(insuranceAddrV3, [spyAddr, nftRewardAddr], "contracts/InsuranceFundV1.sol:InsuranceFundV1");

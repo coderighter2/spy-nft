@@ -1,47 +1,42 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.6.0 <=0.8.4;
 
-import "@openzeppelin/contracts/utils/math/Math.sol";
-import "@openzeppelin/contracts/utils/math/SafeMath.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
-import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/contracts-upgradeable/utils/math/MathUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/utils/math/SafeMathUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC721/IERC721Upgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
 
-// gego
-import "./library/Governance.sol";
+import "./library/GovernanceUpgradeable.sol";
+import "./interface/IERC20WithDecimals.sol";
 import "./interface/IPool.sol";
-import "./interface/ISpyNFTFactory.sol";
-import "./interface/ISpyNFT.sol";
+import "./interface/ISpyNFTFactoryUpgradeable.sol";
+import "./interface/ISpyNFTUpgradeable.sol";
 
 
-contract GeneralNFTReward is IPool,Governance {
-    using SafeERC20 for IERC20;
-    using SafeMath for uint256;
+contract GeneralNFTRewardUpgradeable is IPool,GovernanceUpgradeable {
+    using SafeERC20Upgradeable for IERC20WithDecimals;
+    using SafeMathUpgradeable for uint256;
 
-    IERC20 public _rewardERC20 = IERC20(address(0x0));
-    ISpyNFTFactory public _gegoFactory = ISpyNFTFactory(address(0x0));
-    ISpyNFT public _gegoToken = ISpyNFT(address(0x0));
-    address public _playerBook = address(0x0);
+    IERC20WithDecimals public _rewardERC20;
+    ISpyNFTFactoryUpgradeable public _gegoFactory;
+    ISpyNFTUpgradeable public _gegoToken;
 
-    address public _teamWallet = address(0x0);
-    address public _rewardPool = address(0x0);
+    address public _teamWallet;
+    address public _rewardPool;
 
     uint256 public constant DURATION = 7 days;
-    uint256 public _startTime =  1629028800;
-    uint256 public _periodFinish = 0;
-    uint256 public _rewardRate = 0;
+    uint256 public _startTime;
+    uint256 public _periodFinish;
+    uint256 public _rewardRate;
     uint256 public _lastUpdateTime;
     uint256 public _rewardPerTokenStored;
-    uint256 public _harvestInterval = 12 hours;
+    uint256 public _harvestInterval;
     uint256 public totalLockedUpRewards;
 
-    uint256 public _teamRewardRate = 1000;
-    uint256 public _poolRewardRate = 1000;
-    uint256 public _baseRate = 10000;
-    uint256 public _punishTime = 3 days;
+    uint256 public _teamRewardRate;
+    uint256 public _poolRewardRate;
+    uint256 public _baseRate;
+    uint256 public _punishTime;
     // The precision factor
     uint256 public REWARDS_PRECISION_FACTOR;
 
@@ -51,7 +46,7 @@ contract GeneralNFTReward is IPool,Governance {
     mapping(address => uint256) public _nextHarvestUntil;
     mapping(address => uint256) public _rewardLockedUp;
 
-    uint256 public _fixRateBase = 100000;
+    uint256 public _fixRateBase;
 
     uint256 public _totalWeight;
     mapping(address => uint256) public _weightBalances;
@@ -60,8 +55,7 @@ contract GeneralNFTReward is IPool,Governance {
 
     uint256 public _totalBalance;
     mapping(address => uint256) public _degoBalances;
-    // uint256 public _maxStakedDego = 200 * 1e18;
-    uint256 public _maxStakedDego = 200;
+    uint256 public _maxStakedDego;
 
     mapping(address => uint256[]) public _playerGego;
     mapping(uint256 => uint256) public _gegoMapIndex;
@@ -75,20 +69,40 @@ contract GeneralNFTReward is IPool,Governance {
     event RewardLockedUp(address indexed user, uint256 reward);
     event NFTReceived(address operator, address from, uint256 tokenId, bytes data);
 
-    constructor(address spyNftToken, address gegoFactory, address rewardAddress, uint256 startTime) {
-        _rewardERC20 = IERC20(rewardAddress);
-        _gegoToken = ISpyNFT(spyNftToken);
-        _gegoFactory = ISpyNFTFactory(gegoFactory);
+    function initialize(
+        address spyNftToken, address gegoFactory, address rewardAddress, uint256 startTime
+    ) public initializer {
+        __GovernanceUpgradeable_init_unchained();
+        __GeneralNFTRewardUpgradeable_init_unchained(spyNftToken, gegoFactory, rewardAddress, startTime);
+    }
 
-        uint256 decimalsRewardToken = uint256(ERC20(rewardAddress).decimals());
+    function __GeneralNFTRewardUpgradeable_init_unchained(address spyNftToken, address gegoFactory, address rewardAddress, uint256 startTime) internal initializer {
+        _rewardERC20 = IERC20WithDecimals(rewardAddress);
+        _gegoToken = ISpyNFTUpgradeable(spyNftToken);
+        _gegoFactory = ISpyNFTFactoryUpgradeable(gegoFactory);
+
+        uint256 decimalsRewardToken = uint256(IERC20WithDecimals(rewardAddress).decimals());
         require(decimalsRewardToken < 18, "Must be inferior to 18");
 
         REWARDS_PRECISION_FACTOR = uint256(10**(uint256(18).sub(decimalsRewardToken)));
 
         _startTime = startTime;
         _lastUpdateTime = _startTime;
-    }
 
+        _teamWallet = address(0x0);
+        _rewardPool = address(0x0);
+        _periodFinish = 0;
+        _rewardRate = 0;
+        _harvestInterval = 12 hours;
+
+        _teamRewardRate = 1000;
+        _poolRewardRate = 1000;
+        _baseRate = 10000;
+        _punishTime = 3 days;
+
+        _fixRateBase = 100000;
+        _maxStakedDego = 200;
+    }
 
     modifier updateReward(address account) {
         _rewardPerTokenStored = rewardPerToken();
@@ -105,20 +119,20 @@ contract GeneralNFTReward is IPool,Governance {
     }
 
     /* Fee collection for any other token */
-    function seize(IERC20 token, uint256 amount) external  {
+    function seize(IERC20WithDecimals token, uint256 amount) external  {
         require(token != _rewardERC20, "reward");
         token.transfer(_governance, amount);
     }
 
     /* Fee collection for any other token */
-    function seizeErc721(IERC721 token, uint256 tokenId) external
+    function seizeErc721(IERC721Upgradeable token, uint256 tokenId) external
     {
         require(token != _gegoToken, "gego stake");
         token.safeTransferFrom(address(this), _governance, tokenId);
     }
 
     function lastTimeRewardApplicable() public view returns (uint256) {
-        return Math.min(block.timestamp, _periodFinish);
+        return MathUpgradeable.min(block.timestamp, _periodFinish);
     }
 
     function rewardPerToken() public view returns (uint256) {
@@ -397,7 +411,7 @@ contract GeneralNFTReward is IPool,Governance {
     {
 
         uint256 balanceBefore = _rewardERC20.balanceOf(address(this));
-        IERC20(_rewardERC20).transferFrom(msg.sender, address(this), reward);
+        IERC20WithDecimals(_rewardERC20).transferFrom(msg.sender, address(this), reward);
         uint256 balanceEnd = _rewardERC20.balanceOf(address(this));
 
         uint256 realReward = balanceEnd.sub(balanceBefore).mul(REWARDS_PRECISION_FACTOR);
